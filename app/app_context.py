@@ -81,6 +81,7 @@ class ApplicationServices:
         from app.services.database import path_to_image_id
         import os
         import hashlib
+        from concurrent.futures import ThreadPoolExecutor, as_completed
 
         logger = logging.getLogger(__name__)
         logger.info("Starting startup sync for: %s", photo_root_path)
@@ -88,6 +89,16 @@ class ApplicationServices:
         valid_extensions = self.config.get_value('preprocessing.valid_extensions')
         to_ingest = []
 
+        cursor = self.db.execute("SELECT image_id, original_path, md5 FROM photo_metadata")
+        all_records = cursor.fetchall()
+        path_to_md5 = {}
+        for row in all_records:
+            original_path = row[1]
+            path_to_md5[original_path] = {'image_id': row[0], 'md5': row[2]}
+
+        logger.info("Loaded %d md5 records into memory", len(path_to_md5))
+
+        file_list = []
         try:
             for dirpath, dirnames, filenames in os.walk(photo_root_path):
                 for filename in filenames:
@@ -109,39 +120,42 @@ class ApplicationServices:
                         continue
 
                     original_path = os.path.abspath(file_path)
-                    try:
-                        image_id = path_to_image_id(self.db, original_path)
-
-                        if image_id:
-                            try:
-                                cursor = self.db.execute("SELECT md5 FROM photo_metadata WHERE image_id = ?", (image_id,))
-                                row = cursor.fetchone()
-                                if row:
-                                    db_md5 = row[0]
-                                    current_md5 = hashlib.md5()
-                                    try:
-                                        with open(original_path, 'rb') as f:
-                                            current_md5.update(f.read())
-                                        current_hash = current_md5.hexdigest()
-                                        if db_md5 != current_hash:
-                                            to_ingest.append(original_path)
-                                    except Exception:
-                                        pass
-                            except Exception:
-                                pass
-                        else:
-                            to_ingest.append(original_path)
-                    except Exception:
-                        pass
+                    file_list.append(original_path)
         except Exception as e:
             logger.error("Startup sync scan error: %s", e)
             return
 
+        logger.info("Found %d files to check, computing MD5 with multithreading...", len(file_list))
+
+        def check_file_md5(file_path):
+            try:
+                record = path_to_md5.get(file_path)
+                if not record:
+                    return (file_path, 'new', None, None)
+                db_md5 = record.get('md5')
+                db_image_id = record.get('image_id')
+                current_md5 = hashlib.md5()
+                with open(file_path, 'rb') as f:
+                    current_md5.update(f.read())
+                current_hash = current_md5.hexdigest()
+                if db_md5 != current_hash:
+                    return (file_path, 'changed', db_image_id, db_md5)
+                return (file_path, 'unchanged', db_image_id, db_md5)
+            except Exception:
+                return (file_path, 'error', None, None)
+
+        max_workers = self.config.get_value('performance.max_concurrent_requests') or 4
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(check_file_md5, fp): fp for fp in file_list}
+            for future in as_completed(futures):
+                result = future.result()
+                if result[1] == 'new' or result[1] == 'changed':
+                    to_ingest.append((result[0], result[2]))
+
         logger.info("Startup sync: found %d files to process", len(to_ingest))
 
-        for file_path in to_ingest:
-            from app.services.database import path_to_image_id
-            existing_id = path_to_image_id(self.db, file_path)
+        for file_path, existing_id in to_ingest:
             if existing_id:
                 self.vector_store.delete_vectors(existing_id)
                 from app.services.database import delete_metadata
