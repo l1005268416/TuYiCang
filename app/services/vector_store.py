@@ -69,6 +69,9 @@ class VectorStore:
                 }
                 self._text_collection.create_index(field_name="vector", index_params=index_params)
                 self._text_collection.load()
+            else:
+                self._text_collection = Collection("text_index")
+                self._text_collection.load()
 
             if not utility.has_collection("vision_index"):
                 vision_fields = [
@@ -84,6 +87,9 @@ class VectorStore:
                     "params": {"nlist": 256},
                 }
                 self._vision_collection.create_index(field_name="vector", index_params=index_params)
+                self._vision_collection.load()
+            else:
+                self._vision_collection = Collection("vision_index")
                 self._vision_collection.load()
 
             self._initialized = True
@@ -131,6 +137,7 @@ class VectorStore:
             }
             results = self._text_collection.search(
                 data=[query_vector],
+                anns_field="vector",
                 param=search_params,
                 limit=top_k,
                 output_fields=["id"],
@@ -169,6 +176,7 @@ class VectorStore:
             }
             results = self._vision_collection.search(
                 data=[reference_vector],
+                anns_field="vector",
                 param=search_params,
                 limit=top_k,
                 output_fields=["id"],

@@ -57,7 +57,8 @@ def search_by_text():
             if len(all_results) >= page_size:
                 break
 
-            metadata_result = svc.database.query_metadata(
+            from app.services.database import query_metadata
+            metadata_result = query_metadata(
                 svc.db,
                 conditions={'image_id': img_id}
             )
@@ -129,8 +130,9 @@ def search_by_image():
 
             result_data = []
             scores_map = dict(zip(search_result['image_ids'], search_result['scores']))
+            from app.services.database import query_metadata
             for img_id in search_result['image_ids']:
-                metadata_result = svc.database.query_metadata(
+                metadata_result = query_metadata(
                     svc.db,
                     conditions={'image_id': img_id}
                 )
