@@ -4,8 +4,9 @@
 
 私有化本地相册知识库，支持文搜图 + 图搜图双核心功能
 <div align="center">
-  <img src="images/1.png" alt="文搜图" width="45%" height="300px">
-  <img src="images/2.png" alt="图搜图" width="45%" height="300px">
+  <img src="images/1.png" alt="Project Screenshot" width="30%" height="170px">
+  <img src="images/2.png" alt="Project Screenshot" width="30%" height="170px">
+  <img src="images/4.png" alt="Project Screenshot" width="30%" height="170px">
 </div>
 
 ## 项目简介

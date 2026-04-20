@@ -2,8 +2,9 @@
 A private local photo album knowledge base with dual core functions: **text-to-image search** and **image-to-image search**
 English | [简体中文](README.md)
 <div align="center">
-  <img src="images/1.png" alt="Project Screenshot" width="45%" height="300px">
-  <img src="images/2.png" alt="Project Screenshot" width="45%" height="300px">
+  <img src="images/1.png" alt="Project Screenshot" width="30%" height="170px">
+  <img src="images/2.png" alt="Project Screenshot" width="30%" height="170px">
+  <img src="images/4.png" alt="Project Screenshot" width="30%" height="170px">
 </div>
 
 ## Project Introduction
