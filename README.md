@@ -30,8 +30,12 @@
 - **向量数据库**：milvus:v2.4.8
 - **元数据数据库**：SQLite 3.41.2
 
-模型部署可以多样化，系统可以按照openai的api调用规范进行扩展。
-Qwen3-VL-Embedding-2B是显存占用大头（13G），因个人显卡(V100)限制，无法运行相关的量化模型，试过Qwen3-VL-Embedding-2B-GPTQ-Int4，图片转向量会数组超限。如果你的显卡支持Qwen3-VL-Embedding-2B-GPTQ-Int4，将大大降低显存占用。
+#### 说明：
+- 模型部署可以多样化，系统可以按照openai的api调用规范进行扩展。
+- Qwen3-VL-Embedding-2B是显存占用大头（13G），因个人显卡(V100)限制，无法运行相关的量化模型，试过Qwen3-VL-Embedding-2B-GPTQ-Int4，图片转向量会数组超限。如果你的显卡支持Qwen3-VL-Embedding-2B-GPTQ-Int4，将大大降低显存占用。
+- milvus可以用docker部署。
+- Qwen3-VL-Embedding-2B是统一语义空间，是支持文本和视觉；文搜图利用Qwen3-VL-Embedding-2B效果要比经VLM模型识别后嵌入，再通过文本嵌入模型（qwen3-embedding）做向量库的检索效果好，无论VLM多么强大，它生成的文字描述都是一种有损压缩。许多无法用简单文字精确表达的视觉信息会大量丢失。
+
 
 ### 前端
 
@@ -105,7 +109,7 @@ curl -fsSL https://ollama.com/install.sh | sh
 ollama pull qwen3.5-0.8b
 ollama pull qwen3-embedding:0.6b
 
-# 启动 Ollama 服务
+# 启动 Ollama 服务(通常状况系统会自启)
 ollama serve
 ```
 
