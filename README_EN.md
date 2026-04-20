@@ -62,7 +62,7 @@ The system is designed with 8 decoupled layers:
 ### Installation Steps
 #### 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/TuYiCang.git
+git clone https://github.com/l1005268416/TuYiCang.git
 cd TuYiCang
 ```
 

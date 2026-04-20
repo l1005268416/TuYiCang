@@ -77,7 +77,7 @@
 #### 1. 克隆项目
 
 ```bash
-git clone https://github.com/yourusername/TuYiCang.git
+git clone https://github.com/l1005268416/TuYiCang.git
 cd TuYiCang
 ```
 
