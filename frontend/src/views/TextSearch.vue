@@ -220,6 +220,7 @@ function getOriginalUrl(photo) {
   border: none;
   border-radius: 0 12px 12px 0;
   padding: 0;
+  min-width: 80px;
 }
 
 .search-btn {
@@ -227,6 +228,11 @@ function getOriginalUrl(photo) {
   border: none !important;
   color: white !important;
   padding: 8px 20px;
+  min-width: 80px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-tips {
