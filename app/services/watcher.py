@@ -1,7 +1,7 @@
 import os
 import time
 import logging
-from queue import Queue
+from queue import Queue, Empty 
 from threading import Thread, Lock
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -91,5 +91,7 @@ class WatcherService:
                 if self.handler_fn:
                     self.handler_fn(event_type, file_path)
                 self._event_queue.task_done()
+            except Empty:
+                continue
             except Exception as e:
                 logger.error("Event processing error: %s", e)
