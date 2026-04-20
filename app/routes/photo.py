@@ -61,8 +61,9 @@ def ingest():
 def status():
     try:
         from app.app_context import get_services
+        from app.services.database import get_photo_count
         svc = get_services()
-        total = svc.database.get_photo_count()
+        total = get_photo_count(svc.db)
         watcher_running = svc.watcher._running if svc.watcher else False
         return jsonify(
             success=True,
@@ -82,8 +83,9 @@ def status():
 def categories():
     try:
         from app.app_context import get_services
+        from app.services.database import query_metadata
         svc = get_services()
-        result = svc.database.query_metadata(
+        result = query_metadata(
             svc.db,
             conditions={},
             page=1,
@@ -127,6 +129,7 @@ def categories():
 def list_photos():
     try:
         from app.app_context import get_services
+        from app.services.database import query_metadata
         svc = get_services()
 
         page = int(request.args.get('page', 1))
@@ -179,12 +182,13 @@ def list_photos():
 def update_tags(image_id):
     try:
         from app.app_context import get_services
+        from app.services.database import update_metadata
         svc = get_services()
         data = request.get_json()
         if not data or 'tags' not in data:
             return jsonify(success=False, code=400, message="Missing tags field")
 
-        result = svc.database.update_metadata(svc.db, image_id, {'tags': data['tags']})
+        result = update_metadata(svc.db, image_id, {'tags': data['tags']})
         if result['status'] == 'success':
             return jsonify(success=True, code=200, data={'updated': True})
         else:

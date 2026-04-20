@@ -222,8 +222,8 @@ System settings are managed via the Web UI, with all configuration data saved in
 
 ## Performance Metrics
 - Supported image capacity: 10,000+
-- Text-to-image search latency: < 2 seconds
-- Image-to-image search latency: < 3 seconds
+- Text-to-image search latency: < 1 seconds
+- Image-to-image search latency: < 1 seconds
 - Image import speed: Approximately 5–10 images per minute (hardware-dependent)
 - VRAM usage: Approximately 6–12GB
 
