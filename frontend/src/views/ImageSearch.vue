@@ -57,7 +57,7 @@
 
     <div v-else-if="results.length > 0">
       <div class="results-header">
-        <span>找到 <strong>{{ results.length }}</strong> 张相似图片</span>
+        <span>找到 <strong>{{ total }}</strong> 张相似图片</span>
       </div>
       <div class="results-grid">
         <div 
@@ -75,6 +75,16 @@
             <div class="score-badge">{{ (photo.score * 100).toFixed(0) }}%</div>
           </div>
         </div>
+      </div>
+
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="pageSize"
+          :total="total"
+          layout="prev, pager, next"
+          @current-change="handlePageChange"
+        />
       </div>
     </div>
 
@@ -123,6 +133,9 @@ const searched = ref(false)
 const results = ref([])
 const dialogVisible = ref(false)
 const selectedPhoto = ref(null)
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 
 function handleUpload(file) {
   selectedFile.value = file.raw
@@ -133,17 +146,35 @@ function handleUpload(file) {
 
 async function handleSearch() {
   if (!selectedFile.value) return
+  currentPage.value = 1
   searching.value = true
   searched.value = true
   try {
-    const res = await searchByImage(selectedFile.value)
+    const res = await searchByImage(selectedFile.value, currentPage.value, pageSize.value)
     if (res.data.success) {
       results.value = res.data.data.results
+      total.value = res.data.data.total
     } else {
       ElMessage.error(res.data.message || '搜索失败')
     }
   } catch (e) {
     ElMessage.error('搜索请求失败')
+  } finally {
+    searching.value = false
+  }
+}
+
+async function handlePageChange(page) {
+  currentPage.value = page
+  searching.value = true
+  try {
+    const res = await searchByImage(selectedFile.value, currentPage.value, pageSize.value)
+    if (res.data.success) {
+      results.value = res.data.data.results
+      total.value = res.data.data.total
+    }
+  } catch (e) {
+    ElMessage.error('加载失败')
   } finally {
     searching.value = false
   }
@@ -155,6 +186,8 @@ function resetUpload() {
   selectedFile.value = null
   searched.value = false
   results.value = []
+  currentPage.value = 1
+  total.value = 0
 }
 
 function showDetail(photo) {
@@ -431,5 +464,35 @@ function getOriginalUrl(photo) {
   .detail-meta {
     grid-template-columns: 1fr;
   }
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+  padding-bottom: 32px;
+}
+
+.pagination-wrapper :deep(.el-pagination) {
+  --el-pagination-bg-color: rgba(30, 41, 59, 0.6);
+  --el-pagination-text-color: #94a3b8;
+  --el-pagination-button-color: #94a3b8;
+  --el-pagination-hover-color: #34d399;
+  --el-pagination-button-disabled-color: #475569;
+  --el-pagination-button-bg-color: transparent;
+  --el-pagination-button-disabled-bg-color: transparent;
+}
+
+.pagination-wrapper :deep(.el-pager li) {
+  background: transparent;
+  color: #94a3b8;
+}
+
+.pagination-wrapper :deep(.el-pager li.is-active) {
+  color: #34d399;
+}
+
+.pagination-wrapper :deep(.el-pager li:hover) {
+  color: #34d399;
 }
 </style>

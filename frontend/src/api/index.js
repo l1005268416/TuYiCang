@@ -37,10 +37,10 @@ export function searchByText(data) {
   return api.post('/search/text', data)
 }
 
-export function searchByImage(file, topK = 20) {
+export function searchByImage(file, page = 1, pageSize = 20) {
   const formData = new FormData()
   formData.append('file', file)
-  formData.append('data', JSON.stringify({ top_k: topK }))
+  formData.append('data', JSON.stringify({ page, page_size: pageSize }))
   return api.post('/search/image', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })

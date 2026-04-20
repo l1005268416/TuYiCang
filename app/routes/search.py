@@ -144,21 +144,30 @@ def search_by_image():
 
             threshold = svc.config.get_value('retrieval.vision_similarity_threshold')
             top_k = svc.config.get_value('retrieval.default_top_k')
+            page = 1
+            page_size = 20
             data_str = request.form.get('data')
             if data_str:
                 import json
                 data_obj = json.loads(data_str)
                 top_k = data_obj.get('top_k', top_k)
+                page = data_obj.get('page', page)
+                page_size = data_obj.get('page_size', page_size)
             search_result = svc.vector_store.search_by_image(
                 vision_vector,
                 top_k=top_k,
                 threshold=threshold
             )
 
-            result_data = []
+            total = len(search_result['image_ids'])
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_ids = search_result['image_ids'][start_idx:end_idx]
             scores_map = dict(zip(search_result['image_ids'], search_result['scores']))
+
+            result_data = []
             from app.services.database import query_metadata
-            for img_id in search_result['image_ids']:
+            for img_id in paginated_ids:
                 metadata_result = query_metadata(
                     svc.db,
                     conditions={'image_id': img_id}
@@ -174,9 +183,9 @@ def search_by_image():
                 success=True,
                 code=200,
                 data={
-                    'total': len(search_result['image_ids']),
-                    'page': 1,
-                    'page_size': len(result_data),
+                    'total': total,
+                    'page': page,
+                    'page_size': page_size,
                     'results': result_data
                 }
             )
