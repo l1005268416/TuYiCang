@@ -4,6 +4,7 @@
 
     <el-card style="margin-bottom: 20px;">
       <el-upload
+        ref="uploadRef"
         drag
         action=""
         :auto-upload="false"
@@ -83,6 +84,7 @@ import { ref } from 'vue'
 import { searchByImage } from '../api/index.js'
 import { ElMessage } from 'element-plus'
 
+const uploadRef = ref(null)
 const previewUrl = ref('')
 const selectedFile = ref(null)
 const searching = ref(false)
@@ -117,6 +119,7 @@ async function handleSearch() {
 }
 
 function resetUpload() {
+  uploadRef.value?.clearFiles()
   previewUrl.value = ''
   selectedFile.value = null
   searched.value = false
