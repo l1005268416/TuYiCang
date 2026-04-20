@@ -25,10 +25,13 @@
 
 - **编程语言**：Python 3.9.10
 - **多模态模型（VLM）**：qwen3.5-0.8b（Ollama部署）
-- **文本嵌入模型**：qwen3-embedding:0.6b、nomic-embed-text（Ollama部署）
-- **视觉嵌入模型**：Qwen3-VL-Embedding-2B-GPTQ-Int4（vLLM部署）
-- **向量数据库**：Milvus Lite 2.4.0
+- **文本嵌入模型**：qwen3-embedding:0.6b（Ollama部署）
+- **视觉嵌入模型**：Qwen3-VL-Embedding-2B（vLLM部署）
+- **向量数据库**：milvus:v2.4.8
 - **元数据数据库**：SQLite 3.41.2
+
+模型部署可以多样化，系统可以按照openai的api调用规范进行扩展。
+Qwen3-VL-Embedding-2B是显存占用大头（13G），因个人显卡(V100)限制，无法运行相关的量化模型，试过Qwen3-VL-Embedding-2B-GPTQ-Int4，图片转向量会数组超限。如果你的显卡支持Qwen3-VL-Embedding-2B-GPTQ-Int4，将大大降低显存占用。
 
 ### 前端
 
@@ -64,7 +67,7 @@
 
 - Python 3.9.10+
 - Node.js 16.18.0+
-- GPU（推荐，用于模型推理加速）
+- GPU 如果不需要跑长上下文，16GB显存即可
 - 至少 8GB 内存
 - 至少 10GB 可用磁盘空间
 
