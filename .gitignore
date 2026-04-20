@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+env/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data
+*.db
+data/
+cache/
+vector_db/
+*.db-journal
+*.db-wal
+
+# Logs
+*.log
+logs/
+
+# Configs (if they contain secrets)
+*.json
+!.gitignore
