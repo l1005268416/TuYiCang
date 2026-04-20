@@ -127,6 +127,15 @@ class ConfigManager:
                 if group_key == 'model_services':
                     db_group = 'model_services'
                     db_key = config_key
+                elif group_key == 'performance':
+                    db_group = 'performance'
+                    db_key = config_key
+                elif group_key == 'retrieval':
+                    db_group = 'retrieval'
+                    db_key = config_key
+                elif group_key == 'preprocessing':
+                    db_group = 'preprocessing'
+                    db_key = config_key
                 else:
                     db_group = 'core'
                     db_key = config_key
@@ -203,17 +212,29 @@ class ConfigManager:
         failed_items = []
         updated_keys = []
 
+        known_groups = {'core', 'model_services', 'performance', 'retrieval', 'preprocessing'}
+
         with self._write_lock:
             for item in config_updates:
                 config_key = item.get('config_key', '')
                 config_value = item.get('config_value', '')
+                group = item.get('group', '')
+                db_key = ''
 
-                parts = config_key.split('.', 1)
-                if len(parts) == 2:
-                    group, db_key = parts
-                else:
+                if group:
                     db_key = config_key
-                    group = 'core'
+                else:
+                    parts = config_key.split('.', 1)
+                    if len(parts) == 2:
+                        potential_group, db_key = parts
+                        if potential_group in known_groups:
+                            group = potential_group
+                        else:
+                            db_key = config_key
+                            group = 'core'
+                    else:
+                        db_key = config_key
+                        group = 'core'
 
                 try:
                     self.db.execute(

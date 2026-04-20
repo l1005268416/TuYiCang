@@ -238,7 +238,8 @@ async function handleSave() {
       if (String(orig.value) !== String(localVal)) {
         updates.push({
           config_key: key,
-          config_value: String(localVal)
+          config_value: String(localVal),
+          group: orig._group || ''
         })
       }
     }
