@@ -1,5 +1,7 @@
 # 图忆仓（TuYiCang）
 
+[English](README_EN.md) | 简体中文
+
 私有化本地相册知识库，支持文搜图 + 图搜图双核心功能
 <div align="center">
   <img src="images/1.png" alt="项目截图" width="45%" height="300px">
