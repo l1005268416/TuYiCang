@@ -4,12 +4,13 @@ import time
 
 logger = logging.getLogger(__name__)
 try:
-    from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType
+    from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType, utility
     MILVUS_AVAILABLE = True
 except ImportError:
     MILVUS_AVAILABLE = False
     connections = None
     Collection = None
+    utility = None
 
 
 class VectorStore:
@@ -53,10 +54,10 @@ class VectorStore:
             return {"status": "success", "index_names": ["text_fallback", "vision_fallback"]}
 
         try:
-            if not Collection.exists("text_index"):
+            if not utility.has_collection("text_index"):
                 text_fields = [
                     FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=36, is_primary=True),
-                    FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=768),
+                    FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=1024),
                 ]
                 text_schema = CollectionSchema(fields=text_fields, description="Text semantic index")
                 self._text_collection = Collection(name="text_index", schema=text_schema)
@@ -64,15 +65,15 @@ class VectorStore:
                 index_params = {
                     "metric_type": "COSINE",
                     "index_type": "IVF_FLAT",
-                    "params": {"nlist": 1024},
+                    "params": {"nlist": 256},
                 }
                 self._text_collection.create_index(field_name="vector", index_params=index_params)
                 self._text_collection.load()
 
-            if not Collection.exists("vision_index"):
+            if not utility.has_collection("vision_index"):
                 vision_fields = [
                     FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=36, is_primary=True),
-                    FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=512),
+                    FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=2048),
                 ]
                 vision_schema = CollectionSchema(fields=vision_fields, description="Vision similarity index")
                 self._vision_collection = Collection(name="vision_index", schema=vision_schema)
@@ -80,7 +81,7 @@ class VectorStore:
                 index_params = {
                     "metric_type": "COSINE",
                     "index_type": "IVF_FLAT",
-                    "params": {"nlist": 1024},
+                    "params": {"nlist": 256},
                 }
                 self._vision_collection.create_index(field_name="vector", index_params=index_params)
                 self._vision_collection.load()
