@@ -523,6 +523,37 @@ function getOriginalUrl(path) {
   gap: 24px;
 }
 
+:deep(.el-dialog) {
+  background: #1e293b !important;
+}
+
+:deep(.el-dialog__header) {
+  background: #1e293b !important;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+:deep(.el-dialog__title) {
+  color: #f8fafc !important;
+}
+
+:deep(.el-dialog__body) {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  padding: 20px 24px;
+}
+
+:deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: #94a3b8 !important;
+}
+
+:deep(.el-dialog__body .meta-label) {
+  color: #94a3b8 !important;
+}
+
+:deep(.el-dialog__body .meta-value) {
+  color: #f8fafc !important;
+}
+
 .meta-item {
   flex: 1;
 }
@@ -532,14 +563,14 @@ function getOriginalUrl(path) {
 }
 
 .meta-label {
-  color: #64748b;
+  color: #94a3b8 !important;
   font-size: 12px;
   display: block;
   margin-bottom: 4px;
 }
 
 .meta-value {
-  color: #f8fafc;
+  color: #f8fafc !important;
   font-size: 14px;
 }
 
