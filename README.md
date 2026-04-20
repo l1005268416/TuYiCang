@@ -97,7 +97,6 @@ curl -fsSL https://ollama.com/install.sh | sh
 # 拉取模型
 ollama pull qwen3.5-0.8b
 ollama pull qwen3-embedding:0.6b
-ollama pull nomic-embed-text
 
 # 启动 Ollama 服务
 ollama serve
@@ -110,7 +109,7 @@ ollama serve
 pip install vllm
 
 # 启动视觉嵌入模型服务
-vllm serve /mnt/beibei1/llama_models/Qwen3-VL-Embedding-2B \
+vllm serve Qwen3-VL-Embedding-2B \
 --runner pooling \
 --max-model-len 36000 \
 --served-model-name \
@@ -132,7 +131,7 @@ Qwen3-VL-Embedding-2B \
 **启动后端服务**
 
 ```bash
-python main.py
+python app.py
 ```
 
 **启动前端服务**
