@@ -264,7 +264,14 @@ TuYiCang/
 - **图搜图响应时间**：< 1秒
 - **入库速度**：约 5-10 张/分钟（取决于硬件配置）
 - **显存占用**：约 6-12GB
-
+- **速率**：V100显卡下，VLM速度约0.55s/次，文本嵌入约0.26s/次，视觉嵌入约0.20s/次
+``` plain
+[2026-04-20 18:20:43] [INFO] [app.services.inference] VLM inference completed in 0.55s (attempt 1)
+[2026-04-20 18:20:44] [INFO] [httpx] HTTP Request: POST http://192.168.1.149:11434/v1/embeddings "HTTP/1.1 200 OK"
+[2026-04-20 18:20:44] [INFO] [app.services.inference] Text embedding inference completed in 0.26s (attempt 1)
+[2026-04-20 18:20:44] [INFO] [httpx] HTTP Request: POST http://192.168.1.149:8022/v1/embeddings "HTTP/1.1 200 OK"
+[2026-04-20 18:20:44] [INFO] [app.services.inference] Vision embedding inference completed in 0.20s (attempt 1)
+```
 ## 常见问题
 
 ### Q: 模型推理速度慢怎么办？
