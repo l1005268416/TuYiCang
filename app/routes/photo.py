@@ -6,6 +6,25 @@ logger = logging.getLogger(__name__)
 photo_bp = Blueprint('photos', __name__, url_prefix='/api/photos')
 
 
+def _path_to_url(local_path):
+    if not local_path:
+        return ''
+    try:
+        from app.app_context import get_services
+        svc = get_services()
+        cache_dir = svc.config.get_value('core.cache_dir')
+        photo_root = svc.config.get_value('core.photo_root_path')
+        if local_path.startswith(cache_dir):
+            rel_path = os.path.relpath(local_path, cache_dir)
+            return f'/api/files/{rel_path}'
+        elif local_path.startswith(photo_root):
+            rel_path = os.path.relpath(local_path, photo_root)
+            return f'/api/files/{rel_path}'
+    except:
+        pass
+    return ''
+
+
 @photo_bp.route('/ingest', methods=['POST'])
 def ingest():
     data = request.get_json()
@@ -136,7 +155,11 @@ def list_photos():
         if sort_by:
             conditions['sort_by'] = sort_by
 
-        result = svc.database.query_metadata(svc.db, conditions, page, page_size)
+        result = query_metadata(svc.db, conditions, page, page_size)
+        records = result['records']
+        for record in records:
+            record['thumb_url'] = _path_to_url(record.get('thumb_path', ''))
+            record['processed_url'] = _path_to_url(record.get('processed_path', ''))
         return jsonify(
             success=True,
             code=200,
@@ -144,7 +167,7 @@ def list_photos():
                 'total': result['total_count'],
                 'page': page,
                 'page_size': page_size,
-                'results': result['records']
+                'results': records
             }
         )
     except Exception as e:
@@ -177,14 +200,14 @@ def delete_photo(image_id):
         from app.app_context import get_services
         svc = get_services()
 
-        from app.services.database import query_metadata
-        existing = svc.database.query_metadata(svc.db, {'image_id': image_id})
+        from app.services.database import query_metadata, delete_metadata
+        existing = query_metadata(svc.db, {'image_id': image_id})
         if not existing['records']:
             return jsonify(success=False, code=404, message="Photo not found")
 
         record = existing['records'][0]
         svc.vector_store.delete_vectors(image_id)
-        svc.database.delete_metadata(svc.db, image_id)
+        delete_metadata(svc.db, image_id)
 
         for field in ['thumb_path', 'processed_path']:
             path = record.get(field)

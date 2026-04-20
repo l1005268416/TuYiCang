@@ -1,8 +1,28 @@
 from flask import Blueprint, request, jsonify
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 search_bp = Blueprint('search', __name__, url_prefix='/api/search')
+
+
+def _path_to_url(local_path):
+    if not local_path:
+        return ''
+    try:
+        from app.app_context import get_services
+        svc = get_services()
+        cache_dir = svc.config.get_value('core.cache_dir')
+        photo_root = svc.config.get_value('core.photo_root_path')
+        if local_path.startswith(cache_dir):
+            rel_path = os.path.relpath(local_path, cache_dir)
+            return f'/api/files/{rel_path}'
+        elif local_path.startswith(photo_root):
+            rel_path = os.path.relpath(local_path, photo_root)
+            return f'/api/files/{rel_path}'
+    except:
+        pass
+    return ''
 
 
 @search_bp.route('/text', methods=['POST'])
@@ -65,6 +85,8 @@ def search_by_text():
             if metadata_result['records']:
                 record = metadata_result['records'][0]
                 record['score'] = scores_map.get(img_id, 0)
+                record['thumb_url'] = _path_to_url(record.get('thumb_path', ''))
+                record['processed_url'] = _path_to_url(record.get('processed_path', ''))
                 all_results.append(record)
 
         total = len(search_result['image_ids'])
@@ -139,6 +161,8 @@ def search_by_image():
                 if metadata_result['records']:
                     record = metadata_result['records'][0]
                     record['score'] = scores_map.get(img_id, 0)
+                    record['thumb_url'] = _path_to_url(record.get('thumb_path', ''))
+                    record['processed_url'] = _path_to_url(record.get('processed_path', ''))
                     result_data.append(record)
 
             return jsonify(

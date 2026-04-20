@@ -1,7 +1,19 @@
-from flask import Blueprint
+from flask import Blueprint, send_from_directory, current_app
 import os
 
 home_bp = Blueprint('home', __name__)
+
+
+@home_bp.route('/api/files/<path:filename>')
+def serve_file(filename):
+    from app.app_context import get_services
+    svc = get_services()
+    cache_dir = svc.config.get_value('core.cache_dir')
+    photo_root = svc.config.get_value('core.photo_root_path')
+    for directory in [cache_dir, photo_root]:
+        if os.path.exists(os.path.join(directory, filename)):
+            return send_from_directory(directory, filename)
+    return "File not found", 404
 
 frontend_dir = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
 
