@@ -39,17 +39,22 @@ def search_by_text():
         page = data.get('page', 1)
         page_size = data.get('page_size', 20)
 
-        text_vector = svc.inference.text_embedding_inference(query)
+        # text_vector = svc.inference.text_embedding_inference(query)
+        text_vector = svc.inference.vision_text_embedding_inference(query)
         if not text_vector:
             return jsonify(success=False, code=500, message="Text embedding failed")
 
         threshold = svc.config.get_value('retrieval.text_similarity_threshold')
-        search_result = svc.vector_store.search_by_text(
+        # search_result = svc.vector_store.search_by_text(
+        #     text_vector,
+        #     top_k=data.get('top_k', svc.config.get_value('retrieval.default_top_k')),
+        #     threshold=threshold
+        # )
+        search_result = svc.vector_store.search_by_image(
             text_vector,
             top_k=data.get('top_k', svc.config.get_value('retrieval.default_top_k')),
             threshold=threshold
         )
-
         if not search_result['image_ids']:
             return jsonify(
                 success=True,

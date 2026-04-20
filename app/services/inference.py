@@ -146,6 +146,39 @@ class ModelInference:
                     "add_special_tokens": add_special_tokens,
                 },
             )
+    def vision_text_embedding_inference(self, text, max_retries=None, retry_delay=None):
+        if max_retries is None:
+            max_retries = self.config.get_value('performance.max_retries')
+        if retry_delay is None:
+            retry_delay = self.config.get_value('performance.retry_delay')
+
+        model_name = self.config.get_value('model_services.vision_embedding.model_name')
+        client, timeout = self._get_vision_embedding_client()
+
+        for attempt in range(max_retries + 1):
+            try:
+                response = self.create_chat_embeddings(
+                    client,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": text},
+                            ],
+                        }
+                    ],
+                    model=model_name,
+                    encoding_format="float",
+                )
+                vector = response.data[0].embedding
+                return _normalize_vector(vector)
+            except Exception as e:
+                logger.warning("Vision embedding attempt %d failed: %s", attempt + 1, e)
+                if attempt < max_retries:
+                    time.sleep(retry_delay)
+                else:
+                    logger.error("Vision embedding failed after %d attempts", max_retries + 1)
+                    return None
     def vision_embedding_inference(self, image_path, max_retries=None, retry_delay=None):
         if max_retries is None:
             max_retries = self.config.get_value('performance.max_retries')
