@@ -69,10 +69,89 @@ class ApplicationServices:
 
         auto_path = self.config.get_value('core.photo_root_path')
         if auto_path:
+            self._sync_on_startup(auto_path)
+
             self.watcher = WatcherService(self.config, handle_watcher_event)
             self.watcher.start(auto_path)
 
         return self
+
+    def _sync_on_startup(self, photo_root_path):
+        import logging
+        from app.services.database import path_to_image_id
+        import os
+        import hashlib
+
+        logger = logging.getLogger(__name__)
+        logger.info("Starting startup sync for: %s", photo_root_path)
+
+        valid_extensions = self.config.get_value('preprocessing.valid_extensions')
+        to_ingest = []
+
+        try:
+            for dirpath, dirnames, filenames in os.walk(photo_root_path):
+                for filename in filenames:
+                    if filename.startswith('.'):
+                        continue
+
+                    ext = os.path.splitext(filename)[1].lower().lstrip('.')
+                    if ext not in valid_extensions:
+                        continue
+
+                    file_path = os.path.join(dirpath, filename)
+
+                    try:
+                        file_size = os.path.getsize(file_path)
+                    except OSError:
+                        continue
+
+                    if file_size == 0:
+                        continue
+
+                    original_path = os.path.abspath(file_path)
+                    try:
+                        image_id = path_to_image_id(self.db, original_path)
+
+                        if image_id:
+                            try:
+                                cursor = self.db.execute("SELECT md5 FROM photo_metadata WHERE image_id = ?", (image_id,))
+                                row = cursor.fetchone()
+                                if row:
+                                    db_md5 = row[0]
+                                    current_md5 = hashlib.md5()
+                                    try:
+                                        with open(original_path, 'rb') as f:
+                                            current_md5.update(f.read())
+                                        current_hash = current_md5.hexdigest()
+                                        if db_md5 != current_hash:
+                                            to_ingest.append(original_path)
+                                    except Exception:
+                                        pass
+                            except Exception:
+                                pass
+                        else:
+                            to_ingest.append(original_path)
+                    except Exception:
+                        pass
+        except Exception as e:
+            logger.error("Startup sync scan error: %s", e)
+            return
+
+        logger.info("Startup sync: found %d files to process", len(to_ingest))
+
+        for file_path in to_ingest:
+            from app.services.database import path_to_image_id
+            existing_id = path_to_image_id(self.db, file_path)
+            if existing_id:
+                self.vector_store.delete_vectors(existing_id)
+                from app.services.database import delete_metadata
+                delete_metadata(self.db, existing_id)
+
+            result = self.preprocessing.ingest_image(file_path)
+            if result['status'] == 'success':
+                logger.info("Startup synced: %s -> %s", file_path, result.get('image_id'))
+            else:
+                logger.warning("Startup sync failed for %s: %s", file_path, result.get('error'))
 
 
 def get_services():
