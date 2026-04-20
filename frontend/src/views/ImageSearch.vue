@@ -84,6 +84,7 @@
           :src="getOriginalUrl(selectedPhoto)"
           style="width: 100%; max-height: 70vh; border-radius: 12px;"
           fit="contain"
+          :preview-src-list="[getOriginalUrl(selectedPhoto)]"
         />
         <div class="detail-meta">
           <div class="meta-item">
