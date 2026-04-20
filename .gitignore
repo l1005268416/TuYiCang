@@ -38,3 +38,5 @@ logs/
 # Configs (if they contain secrets)
 *.json
 !.gitignore
+doc/TuYiCangSRS.md
+doc/TuYiCangSDDD.md
