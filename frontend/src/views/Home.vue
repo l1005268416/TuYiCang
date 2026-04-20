@@ -41,10 +41,10 @@
              style="width: 80px; cursor: pointer;"
              @click="$router.push('/album')">
           <el-image
-            :src="getThumbUrl(photo.thumb_path)"
+            :src="photo.thumb_url || getThumbUrl(photo.thumb_path)"
             style="width: 80px; height: 80px; border-radius: 4px;"
             fit="cover"
-            :preview-src-list="[getOriginalUrl(photo.original_path)]"
+            :preview-src-list="[photo.processed_url || getOriginalUrl(photo.original_path)]"
           />
         </div>
       </div>

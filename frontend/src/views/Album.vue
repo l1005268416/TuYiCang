@@ -46,7 +46,7 @@
           <el-col :span="4" v-for="photo in photos" :key="photo.image_id">
             <el-card shadow="hover" style="cursor: pointer;" @click="showDetail(photo)">
               <el-image
-                :src="getThumbUrl(photo.thumb_path)"
+                :src="photo.thumb_url || getThumbUrl(photo.thumb_path)"
                 style="width: 100%; height: 120px; border-radius: 4px;"
                 fit="cover"
               />
@@ -77,7 +77,7 @@
     <el-dialog v-model="dialogVisible" title="图片详情" width="700px">
       <div v-if="selectedPhoto">
         <el-image
-          :src="getOriginalUrl(selectedPhoto.original_path)"
+          :src="selectedPhoto.processed_url || getOriginalUrl(selectedPhoto.original_path)"
           style="width: 100%; max-height: 400px; border-radius: 4px;"
           fit="contain"
         />
