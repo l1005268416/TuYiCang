@@ -1,14 +1,14 @@
 import logging
 import time
 from openai import OpenAI
+from openai.types.create_embedding_response import CreateEmbeddingResponse
+from openai._types import NOT_GIVEN, NotGiven
+from openai.types.chat import ChatCompletionMessageParam
+from typing import Literal
 
 logger = logging.getLogger(__name__)
 
-VLM_PROMPT = (
-    "请客观描述图片内容，包括场景、物体、颜色、构图等细节，不添加主观评价；"
-    "生成5-8个标签，用逗号分隔，贴合图片内容；"
-    "输出格式严格遵循'长描述：XXX；标签：XXX'，不要添加多余内容。"
-)
+VLM_PROMPT = "你是一个图像描述专家。请客观描述图片中的场景、物体、颜色、构图等细节，生成5-8个关键词标签。"
 
 
 class ModelInference:
@@ -53,7 +53,7 @@ class ModelInference:
                         {
                             "role": "user",
                             "content": [
-                                {"type": "text", "text": "请按照系统提示词要求描述这张图片"},
+                                {"type": "text", "text": "请描述这张图片并以JSON格式输出"},
                                 {
                                     "type": "image_url",
                                     "image_url": {"url": f"data:image/jpeg;base64,{_image_to_base64(image_path)}"}
@@ -63,9 +63,32 @@ class ModelInference:
                     ],
                     temperature=temperature,
                     max_tokens=512,
+                    response_format={
+                        "type": "json_schema",
+                        "json_schema": {
+                            "name": "image_description",
+                            "strict": True,
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "description": {
+                                        "type": "string",
+                                        "description": "客观描述图片中的场景、物体、颜色、构图等细节"
+                                    },
+                                    "tags": {
+                                        "type": "array",
+                                        "items": {"type": "string"},
+                                        "description": "5-8个关键词标签"
+                                    }
+                                },
+                                "required": ["description", "tags"],
+                                "additionalProperties": False
+                            }
+                        }
+                    },
                 )
                 text = response.choices[0].message.content.strip()
-                return self._parse_vlm_output(text)
+                return self._parse_json_output(text)
             except Exception as e:
                 logger.warning("VLM inference attempt %d failed: %s", attempt + 1, e)
                 if attempt < max_retries:
@@ -98,7 +121,31 @@ class ModelInference:
                 else:
                     logger.error("Text embedding failed after %d attempts", max_retries + 1)
                     return None
-
+    def create_chat_embeddings(
+        self,
+        client: OpenAI,
+        *,
+        messages: list[ChatCompletionMessageParam],
+        model: str,
+        encoding_format: Literal["base64", "float"] | NotGiven = NOT_GIVEN,
+        continue_final_message: bool = False,
+        add_special_tokens: bool = False,
+        ) -> CreateEmbeddingResponse:
+            """
+            Convenience function for accessing vLLM's Chat Embeddings API,
+            which is an extension of OpenAI's existing Embeddings API.
+            """
+            return client.post(
+                "/embeddings",
+                cast_to=CreateEmbeddingResponse,
+                body={
+                    "messages": messages,
+                    "model": model,
+                    "encoding_format": encoding_format,
+                    "continue_final_message": continue_final_message,
+                    "add_special_tokens": add_special_tokens,
+                },
+            )
     def vision_embedding_inference(self, image_path, max_retries=None, retry_delay=None):
         if max_retries is None:
             max_retries = self.config.get_value('performance.max_retries')
@@ -110,11 +157,33 @@ class ModelInference:
 
         for attempt in range(max_retries + 1):
             try:
-                response = client.embeddings.create(
+                # response = client.embeddings.create(
+                #     model=model_name,
+                #     input=[
+                #         {
+                #             "role": "user",
+                #             "content": [
+                #                 {
+                #                     "type": "image_url",
+                #                     "image_url": {"url": f"data:image/jpeg;base64,{_image_to_base64(image_path)}"}
+                #                 }
+                #             ]
+                #         }
+                #     ],
+                #     encoding_format="float"
+                # )
+                response = self.create_chat_embeddings(
+                    client,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{_image_to_base64(image_path)}"}},
+                            ],
+                        }
+                    ],
                     model=model_name,
-                    input={
-                        "image_url": {"url": f"data:image/jpeg;base64,{_image_to_base64(image_path)}"}
-                    },
+                    encoding_format="float",
                 )
                 vector = response.data[0].embedding
                 return _normalize_vector(vector)
@@ -126,7 +195,48 @@ class ModelInference:
                     logger.error("Vision embedding failed after %d attempts", max_retries + 1)
                     return None
 
-    def _parse_vlm_output(self, text):
+    def _parse_json_output(self, text):
+        import json
+        import re
+
+        description = ""
+        tags = []
+
+        try:
+            match = re.search(r'\{[^{}]*\}', text, re.DOTALL)
+            if match:
+                data = json.loads(match.group())
+                description = data.get('description', '')
+                tags = data.get('tags', [])
+            else:
+                data = json.loads(text)
+                description = data.get('description', '')
+                tags = data.get('tags', [])
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning("JSON parse failed, falling back to text parsing: %s", e)
+            return self._parse_text_fallback(text)
+
+        if not isinstance(tags, list):
+            tags = []
+        tags = [str(t).strip() for t in tags if str(t).strip()]
+
+        # if len(tags) < 5:
+        #     tags = self._fallback_extract_tags(description)
+
+        return description, tags[:8]
+
+    def _fallback_extract_tags(self, text):
+        keywords = ['天空', '建筑', '人物', '植物', '动物', '山', '水', '海', '湖', '城市',
+                    '乡村', '道路', '汽车', '室内', '室外', '白天', '夜晚', '花', '树', '草',
+                    '云', '雪', '雨', '森林', '沙滩', '沙滩', '建筑', '现代', '古典', '自然']
+        found = []
+        text_lower = text.lower()
+        for kw in keywords:
+            if kw in text_lower:
+                found.append(kw)
+        return found[:8] if found else ['未识别']
+
+    def _parse_text_fallback(self, text):
         description = ""
         tags = []
 
@@ -135,18 +245,14 @@ class ModelInference:
             for part in parts:
                 part = part.strip()
                 if part.startswith('长描述：') or part.startswith('描述：'):
-                    description = part[3:].strip()
+                    description = part[4:].strip()
                 elif part.startswith('标签：'):
                     tag_str = part[3:].strip()
-                    tags = [t.strip() for t in tag_str.split(',') if t.strip()]
-                elif part.startswith('描述'):
-                    description = part[2:].strip()
-                elif part.startswith('标签'):
-                    tag_str = part[2:].strip()
                     tags = [t.strip() for t in tag_str.split(',') if t.strip()]
         else:
             if ':' in text:
                 first_part, rest = text.split(':', 1)
+                first_part = first_part.strip()
                 if '描述' in first_part:
                     description = rest.strip()
                 elif '标签' in first_part:
@@ -154,16 +260,10 @@ class ModelInference:
             else:
                 description = text
 
-        if not tags and ',' in description:
-            potential_tags = [t.strip() for t in description.split(',')[-5:] if t.strip()]
-            if all(len(t) > 0 and len(t) < 20 for t in potential_tags):
-                description = ','.join(description.split(',')[:-len(potential_tags)]).strip()
-                tags = potential_tags
-
         if not description and tags:
             description = text
 
-        return description, tags
+        return description, tags[:8] if tags else self._fallback_extract_tags(description)
 
 
 def _image_to_base64(image_path):

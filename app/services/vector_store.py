@@ -3,9 +3,8 @@ import os
 import time
 
 logger = logging.getLogger(__name__)
-
 try:
-    from pymilvus import connections, collection, Collection, CollectionSchema, FieldSchema, DataType, connections
+    from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType
     MILVUS_AVAILABLE = True
 except ImportError:
     MILVUS_AVAILABLE = False
@@ -42,7 +41,7 @@ class VectorStore:
         try:
             connections.connect(
                 alias="default",
-                host="localhost",
+                host="192.168.1.149",
                 port=19530,
                 timeout=10
             )
