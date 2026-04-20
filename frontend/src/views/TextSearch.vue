@@ -69,7 +69,7 @@
       <div v-if="selectedPhoto">
         <el-image
           :src="getOriginalUrl(selectedPhoto)"
-          style="width: 100%; max-height: 450px; border-radius: 12px;"
+          style="width: 100%; max-height: 70vh; border-radius: 12px;"
           fit="contain"
         />
         <div class="detail-meta">

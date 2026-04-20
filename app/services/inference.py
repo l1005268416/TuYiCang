@@ -46,6 +46,7 @@ class ModelInference:
 
         for attempt in range(max_retries + 1):
             try:
+                start_time = time.time()
                 response = client.chat.completions.create(
                     model=model_name,
                     messages=[
@@ -87,6 +88,8 @@ class ModelInference:
                         }
                     },
                 )
+                elapsed = time.time() - start_time
+                logger.info("VLM inference completed in %.2fs (attempt %d)", elapsed, attempt + 1)
                 text = response.choices[0].message.content.strip()
                 if text=="" and attempt < max_retries:
                     time.sleep(retry_delay)
@@ -111,10 +114,13 @@ class ModelInference:
 
         for attempt in range(max_retries + 1):
             try:
+                start_time = time.time()
                 response = client.embeddings.create(
                     model=model_name,
                     input=text,
                 )
+                elapsed = time.time() - start_time
+                logger.info("Text embedding inference completed in %.2fs (attempt %d)", elapsed, attempt + 1)
                 vector = response.data[0].embedding
                 return _normalize_vector(vector)
             except Exception as e:
@@ -160,6 +166,7 @@ class ModelInference:
 
         for attempt in range(max_retries + 1):
             try:
+                start_time = time.time()
                 response = self.create_chat_embeddings(
                     client,
                     messages=[
@@ -173,6 +180,8 @@ class ModelInference:
                     model=model_name,
                     encoding_format="float",
                 )
+                elapsed = time.time() - start_time
+                logger.info("Vision text embedding inference completed in %.2fs (attempt %d)", elapsed, attempt + 1)
                 vector = response.data[0].embedding
                 return _normalize_vector(vector)
             except Exception as e:
@@ -208,6 +217,7 @@ class ModelInference:
                 #     ],
                 #     encoding_format="float"
                 # )
+                start_time = time.time()
                 response = self.create_chat_embeddings(
                     client,
                     messages=[
@@ -221,6 +231,8 @@ class ModelInference:
                     model=model_name,
                     encoding_format="float",
                 )
+                elapsed = time.time() - start_time
+                logger.info("Vision embedding inference completed in %.2fs (attempt %d)", elapsed, attempt + 1)
                 vector = response.data[0].embedding
                 return _normalize_vector(vector)
             except Exception as e:

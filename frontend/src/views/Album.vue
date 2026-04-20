@@ -93,13 +93,16 @@
       </main>
     </div>
 
-    <el-dialog v-model="dialogVisible" title="图片详情" width="750px" class="detail-dialog">
+    <el-dialog v-model="dialogVisible" title="图片详情" width="750px" class="detail-dialog" destroy-on-close>
       <div v-if="selectedPhoto">
-        <el-image
-          :src="selectedPhoto.processed_url || getOriginalUrl(selectedPhoto.original_path)"
-          style="width: 100%; max-height: 450px; border-radius: 12px;"
-          fit="contain"
-        />
+        <div class="detail-image-wrapper">
+          <el-image
+            :src="selectedPhoto.processed_url || getOriginalUrl(selectedPhoto.original_path)"
+            style="width: 100%; max-height: 70vh; border-radius: 12px;"
+            fit="contain"
+            :preview-src-list="[selectedPhoto.processed_url || getOriginalUrl(selectedPhoto.original_path)]"
+          />
+        </div>
         <div class="detail-meta">
           <div class="meta-row">
             <div class="meta-item">
@@ -588,6 +591,20 @@ function getOriginalUrl(path) {
 
 .edit-tag-btn {
   color: #818cf8 !important;
+}
+
+.detail-image-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.detail-image-wrapper :deep(.el-image__wrapper) {
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .detail-actions {
