@@ -155,7 +155,7 @@ class ApplicationServices:
 
         logger.info("Startup sync: found %d files to process", len(to_ingest))
 
-        for file_path, existing_id in to_ingest:
+        def process_ingest(file_path, existing_id):
             if existing_id:
                 self.vector_store.delete_vectors(existing_id)
                 from app.services.database import delete_metadata
@@ -166,6 +166,14 @@ class ApplicationServices:
                 logger.info("Startup synced: %s -> %s", file_path, result.get('image_id'))
             else:
                 logger.warning("Startup sync failed for %s: %s", file_path, result.get('error'))
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(process_ingest, fp, eid) for fp, eid in to_ingest]
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception as e:
+                    logger.error("Ingest error: %s", e)
 
 
 def get_services():

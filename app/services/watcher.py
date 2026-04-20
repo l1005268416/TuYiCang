@@ -1,8 +1,9 @@
 import os
 import time
 import logging
-from queue import Queue, Empty 
+from queue import Queue, Empty
 from threading import Thread, Lock
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
@@ -46,6 +47,7 @@ class WatcherService:
         self._worker_thread = None
         self._event_queue = Queue()
         self._running = False
+        self._executor = None
 
     def start(self, photo_root_path=None):
         if self._running:
@@ -56,6 +58,9 @@ class WatcherService:
 
         if not os.path.isdir(photo_root_path):
             return {"status": "failed", "error": f"Directory not found: {photo_root_path}"}
+
+        max_workers = self.config.get_value('performance.max_concurrent_requests') or 4
+        self._executor = ThreadPoolExecutor(max_workers=max_workers)
 
         valid_extensions = self.config.get_value('preprocessing.valid_extensions')
         event_handler = DirectoryEventHandler(
@@ -80,6 +85,8 @@ class WatcherService:
             self._observer.stop()
             self._observer.join(timeout=5)
         self._running = False
+        if self._executor:
+            self._executor.shutdown(wait=True)
         logger.info("File watcher stopped")
         return {"status": "stopped"}
 
@@ -88,8 +95,9 @@ class WatcherService:
             try:
                 event = self._event_queue.get(timeout=1)
                 event_type, file_path = event
-                if self.handler_fn:
-                    self.handler_fn(event_type, file_path)
+                logger.info("event_queue size: %s, event_type: %s, file_path: %s", self._event_queue.qsize(), event_type, file_path)
+                if self.handler_fn and self._executor:
+                    self._executor.submit(self.handler_fn, event_type, file_path)
                 self._event_queue.task_done()
             except Empty:
                 continue
