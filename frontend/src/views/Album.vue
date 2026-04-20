@@ -1,108 +1,160 @@
 <template>
-  <div style="padding: 20px; max-width: 1400px; margin: 0 auto;">
-    <h2 style="margin-bottom: 20px;">相册管理</h2>
+  <div class="page-container">
+    <div class="page-header">
+      <h2 class="page-title">
+        <el-icon class="title-icon"><FolderOpened /></el-icon>
+        相册管理
+      </h2>
+      <p class="page-desc">浏览和管理你的照片库</p>
+    </div>
 
-    <el-row :gutter="20">
-      <el-col :span="4">
-        <el-card shadow="hover">
-          <template #header>
-            <span>文件夹分类</span>
-          </template>
+    <div class="album-layout">
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h3 class="sidebar-title">文件夹分类</h3>
           <el-tree
             :data="categories"
             :props="{ label: 'name', children: 'children' }"
-            style="background: transparent;"
+            class="category-tree"
             @node-click="handleCategoryClick"
           />
-        </el-card>
-      </el-col>
+        </div>
+      </aside>
 
-      <el-col :span="20">
-        <el-card style="margin-bottom: 16px;">
-          <el-row :gutter="10" align="middle">
+      <main class="main-content">
+        <div class="filter-card">
+          <el-row :gutter="16" align="middle">
             <el-col :span="6">
-              <el-input v-model="searchTag" placeholder="搜索标签" clearable />
+              <el-input 
+                v-model="searchTag" 
+                placeholder="搜索标签" 
+                clearable 
+                class="filter-input"
+              >
+                <template #prefix>
+                  <el-icon><Search /></el-icon>
+                </template>
+              </el-input>
             </el-col>
-            <el-col :span="6">
+            <el-col :span="10">
               <el-date-picker
                 v-model="dateRange"
                 type="daterange"
                 range-separator="至"
-                start-placeholder="开始"
-                end-placeholder="结束"
-                style="width: 100%;"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                class="filter-date"
               />
             </el-col>
             <el-col :span="4">
-              <el-button type="primary" @click="loadPhotos">查询</el-button>
+              <el-button type="primary" @click="loadPhotos" class="filter-btn">
+                <el-icon><Search /></el-icon>
+                查询
+              </el-button>
             </el-col>
             <el-col :span="4" style="text-align: right;">
-              <span style="color: #999; font-size: 12px;">共 {{ total }} 张图片</span>
+              <span class="total-count">共 <strong>{{ total }}</strong> 张图片</span>
             </el-col>
           </el-row>
-        </el-card>
+        </div>
 
-        <el-row :gutter="10">
-          <el-col :span="4" v-for="photo in photos" :key="photo.image_id">
-            <el-card shadow="hover" style="cursor: pointer;" @click="showDetail(photo)">
-              <el-image
-                :src="photo.thumb_url || getThumbUrl(photo.thumb_path)"
-                style="width: 100%; height: 120px; border-radius: 4px;"
-                fit="cover"
-              />
-              <div style="margin-top: 4px; font-size: 11px; color: #999; overflow: hidden;
-                          text-overflow: ellipsis; white-space: nowrap;">
-                {{ photo.folder_tag || '根目录' }}
-              </div>
-              <div style="margin-top: 4px; font-size: 11px; color: #666; overflow: hidden;
-                          text-overflow: ellipsis; white-space: nowrap;">
-                {{ photo.shoot_time || photo.create_time || '' }}
-              </div>
-            </el-card>
-          </el-col>
-        </el-row>
+        <div class="photos-grid">
+          <div 
+            v-for="photo in photos" 
+            :key="photo.image_id" 
+            class="photo-card"
+            @click="showDetail(photo)"
+          >
+            <el-image
+              :src="photo.thumb_url || getThumbUrl(photo.thumb_path)"
+              class="photo-image"
+              fit="cover"
+            />
+            <div class="photo-overlay">
+              <el-icon><ZoomIn /></el-icon>
+            </div>
+            <div class="photo-info">
+              <span class="photo-folder">{{ photo.folder_tag || '根目录' }}</span>
+              <span class="photo-date">{{ formatDate(photo.shoot_time || photo.create_time) }}</span>
+            </div>
+          </div>
+        </div>
 
-        <div style="text-align: center; margin-top: 20px;">
+        <div class="pagination-wrapper" v-if="total > pageSize">
           <el-pagination
             v-model:current-page="currentPage"
             :page-size="pageSize"
             :total="total"
             layout="prev, pager, next"
+            background
             @current-change="handlePageChange"
           />
         </div>
-      </el-col>
-    </el-row>
+      </main>
+    </div>
 
-    <el-dialog v-model="dialogVisible" title="图片详情" width="700px">
+    <el-dialog v-model="dialogVisible" title="图片详情" width="750px" class="detail-dialog">
       <div v-if="selectedPhoto">
         <el-image
           :src="selectedPhoto.processed_url || getOriginalUrl(selectedPhoto.original_path)"
-          style="width: 100%; max-height: 400px; border-radius: 4px;"
+          style="width: 100%; max-height: 450px; border-radius: 12px;"
           fit="contain"
         />
-        <div style="margin-top: 16px;">
-          <p><strong>描述：</strong>{{ selectedPhoto.description }}</p>
-          <p><strong>标签：</strong>
-            <el-tag v-for="tag in (selectedPhoto.tags || '').split(',')" :key="tag" style="margin-right: 4px;">
-              {{ tag }}
-            </el-tag>
-            <el-button text size="small" @click="editTags" style="margin-left: 8px;">编辑</el-button>
-          </p>
-          <p v-if="selectedPhoto.shoot_time"><strong>拍摄时间：</strong>{{ selectedPhoto.shoot_time }}</p>
-          <p v-if="selectedPhoto.camera_model"><strong>相机型号：</strong>{{ selectedPhoto.camera_model }}</p>
-          <p v-if="selectedPhoto.gps"><strong>GPS位置：</strong>{{ selectedPhoto.gps }}</p>
-          <p v-if="selectedPhoto.resolution"><strong>分辨率：</strong>{{ selectedPhoto.resolution }}</p>
-          <p><strong>路径：</strong>{{ selectedPhoto.original_path }}</p>
-          <p><strong>入库时间：</strong>{{ selectedPhoto.create_time }}</p>
+        <div class="detail-meta">
+          <div class="meta-row">
+            <div class="meta-item">
+              <span class="meta-label">描述</span>
+              <span class="meta-value">{{ selectedPhoto.description || '-' }}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">标签</span>
+              <div class="meta-tags">
+                <el-tag v-for="tag in (selectedPhoto.tags || '').split(',')" :key="tag" size="small" v-if="selectedPhoto.tags">
+                  {{ tag }}
+                </el-tag>
+                <el-button text size="small" @click="editTags" class="edit-tag-btn">编辑</el-button>
+              </div>
+            </div>
+          </div>
+          <div class="meta-row">
+            <div class="meta-item" v-if="selectedPhoto.shoot_time">
+              <span class="meta-label">拍摄时间</span>
+              <span class="meta-value">{{ selectedPhoto.shoot_time }}</span>
+            </div>
+            <div class="meta-item" v-if="selectedPhoto.camera_model">
+              <span class="meta-label">相机型号</span>
+              <span class="meta-value">{{ selectedPhoto.camera_model }}</span>
+            </div>
+          </div>
+          <div class="meta-row">
+            <div class="meta-item" v-if="selectedPhoto.gps">
+              <span class="meta-label">GPS位置</span>
+              <span class="meta-value">{{ selectedPhoto.gps }}</span>
+            </div>
+            <div class="meta-item" v-if="selectedPhoto.resolution">
+              <span class="meta-label">分辨率</span>
+              <span class="meta-value">{{ selectedPhoto.resolution }}</span>
+            </div>
+          </div>
+          <div class="meta-item full-width">
+            <span class="meta-label">路径</span>
+            <span class="meta-value path">{{ selectedPhoto.original_path }}</span>
+          </div>
+          <div class="meta-item full-width">
+            <span class="meta-label">入库时间</span>
+            <span class="meta-value">{{ selectedPhoto.create_time }}</span>
+          </div>
         </div>
-        <div style="margin-top: 20px; text-align: right;">
-          <el-button type="danger" @click="handleDelete(selectedPhoto.image_id)">删除图片</el-button>
+        <div class="detail-actions">
+          <el-button type="danger" @click="handleDelete(selectedPhoto.image_id)">
+            <el-icon><Delete /></el-icon>
+            删除图片
+          </el-button>
         </div>
       </div>
     </el-dialog>
 
-    <el-dialog v-model="tagDialogVisible" title="编辑标签" width="400px">
+    <el-dialog v-model="tagDialogVisible" title="编辑标签" width="400px" class="tag-dialog">
       <el-input v-model="tagInput" placeholder="用逗号分隔多个标签" />
       <template #footer>
         <el-button @click="tagDialogVisible = false">取消</el-button>
@@ -116,6 +168,7 @@
 import { ref, onMounted } from 'vue'
 import { getPhotos, getCategories, updateTags, deletePhoto } from '../api/index.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search, ZoomIn, FolderOpened, Delete } from '@element-plus/icons-vue'
 
 const categories = ref([])
 const photos = ref([])
@@ -130,6 +183,11 @@ const tagDialogVisible = ref(false)
 const selectedPhoto = ref(null)
 const tagInput = ref('')
 const editingImageId = ref('')
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  return dateStr.substring(0, 10)
+}
 
 onMounted(() => {
   loadCategories()
@@ -233,3 +291,313 @@ function getOriginalUrl(path) {
   return path
 }
 </script>
+
+<style scoped>
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title-icon {
+  color: #fbbf24;
+}
+
+.page-desc {
+  color: #64748b;
+  margin: 0;
+}
+
+.album-layout {
+  display: flex;
+  gap: 24px;
+}
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+.sidebar-card {
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  position: sticky;
+  top: 88px;
+}
+
+.sidebar-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.category-tree {
+  background: transparent !important;
+}
+
+.category-tree :deep(.el-tree-node__content) {
+  background: transparent !important;
+  color: #94a3b8;
+  border-radius: 8px;
+  height: 36px;
+}
+
+.category-tree :deep(.el-tree-node__content:hover) {
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: #f8fafc;
+}
+
+.category-tree :deep(.el-tree-node.is-current > .el-tree-node__content) {
+  background: rgba(99, 102, 241, 0.2) !important;
+  color: #818cf8;
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-card {
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  margin-bottom: 24px;
+}
+
+.filter-input :deep(.el-input__wrapper) {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  box-shadow: none;
+  border-radius: 10px;
+}
+
+.filter-input :deep(.el-input__inner) {
+  color: #f8fafc;
+}
+
+.filter-date {
+  width: 100% !important;
+}
+
+.filter-date :deep(.el-input__wrapper) {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  box-shadow: none;
+}
+
+.filter-btn {
+  background: linear-gradient(135deg, #6366f1, #818cf8) !important;
+  border: none !important;
+  border-radius: 10px;
+}
+
+.total-count {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.total-count strong {
+  color: #818cf8;
+}
+
+.photos-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+.photo-card {
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.photo-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+}
+
+.photo-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.photo-card:hover .photo-overlay {
+  opacity: 1;
+}
+
+.photo-overlay .el-icon {
+  font-size: 28px;
+  color: white;
+}
+
+.photo-info {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.photo-folder {
+  color: #94a3b8;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-date {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.pagination-wrapper :deep(.el-pagination) {
+  --el-pagination-bg-color: rgba(30, 41, 59, 0.6);
+  --el-pagination-text-color: #94a3b8;
+  --el-pagination-button-bg-color: rgba(30, 41, 59, 0.8);
+}
+
+.pagination-wrapper :deep(.el-pager li) {
+  background: rgba(30, 41, 59, 0.8);
+  color: #94a3b8;
+  border-radius: 8px;
+  margin: 0 4px;
+}
+
+.pagination-wrapper :deep(.el-pager li.is-active) {
+  background: #6366f1;
+  color: white;
+}
+
+.detail-meta {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meta-row {
+  display: flex;
+  gap: 24px;
+}
+
+.meta-item {
+  flex: 1;
+}
+
+.meta-item.full-width {
+  width: 100%;
+}
+
+.meta-label {
+  color: #64748b;
+  font-size: 12px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.meta-value {
+  color: #f8fafc;
+  font-size: 14px;
+}
+
+.meta-value.path {
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.meta-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.edit-tag-btn {
+  color: #818cf8 !important;
+}
+
+.detail-actions {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(99, 102, 241, 0.15);
+  text-align: right;
+}
+
+@media (max-width: 1200px) {
+  .photos-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .album-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .sidebar-card {
+    position: static;
+  }
+
+  .photos-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .photos-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .meta-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+</style>

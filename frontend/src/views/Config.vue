@@ -1,84 +1,98 @@
 <template>
-  <div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
-    <h2 style="margin-bottom: 20px;">配置管理</h2>
-
-    <el-tabs v-model="activeGroup" type="card">
-      <el-tab-pane
-        v-for="key in allGroups"
-        :key="key"
-        :label="getGroupLabel(key)"
-        :name="key"
-      />
-    </el-tabs>
-
-    <div style="margin-top: 20px;">
-      <el-row :gutter="20">
-        <el-col :span="12" v-for="item in visibleConfigs" :key="item._saveKey">
-          <el-card shadow="hover" style="margin-bottom: 16px;">
-            <template #header>
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <span>
-                  <span v-if="item.is_required" style="color: #f56c6c; margin-right: 4px;">*</span>
-                  {{ item._keyLabel }}
-                </span>
-                <el-tooltip :content="item.desc" placement="top">
-                  <el-icon style="cursor: help;"><QuestionFilled /></el-icon>
-                </el-tooltip>
-              </div>
-            </template>
-            <div style="margin-bottom: 8px; color: #999; font-size: 12px;">
-              当前: {{ item.value }}
-            </div>
-            <el-input
-              v-if="isBoolean(item.value)"
-              :model-value="item._localValue"
-              @update:model-value="onInput(item._saveKey, $event)"
-            >
-              <template #prepend>
-                <el-switch
-                  :model-value="item._localValue === 'true'"
-                  @update:model-value="onInput(item._saveKey, $event ? 'true' : 'false')"
-                  :active-value="true"
-                  :inactive-value="false"
-                />
-              </template>
-            </el-input>
-            <el-input-number
-              v-else-if="isNumber(item.value)"
-              :model-value="parseNumber(item._localValue)"
-              @update:model-value="onInput(item._saveKey, $event?.toString())"
-              :min="0"
-              style="width: 100%;"
-            />
-            <el-input
-              v-else
-              :model-value="item._localValue"
-              @update:model-value="onInput(item._saveKey, $event)"
-              style="width: 100%;"
-            />
-          </el-card>
-        </el-col>
-      </el-row>
+  <div class="page-container">
+    <div class="page-header">
+      <h2 class="page-title">
+        <el-icon class="title-icon"><Setting /></el-icon>
+        配置管理
+      </h2>
+      <p class="page-desc">管理系统配置参数</p>
     </div>
 
-    <div style="margin-top: 20px; display: flex; gap: 10px;">
-      <el-button type="primary" @click="handleSave" :loading="saving">保存配置</el-button>
-      <el-button @click="handleReset">重置为默认值</el-button>
-      <el-button @click="handleExport">导出配置</el-button>
+    <div class="config-tabs">
+      <el-tabs v-model="activeGroup" type="card" class="config-tabs-inner">
+        <el-tab-pane
+          v-for="key in allGroups"
+          :key="key"
+          :label="getGroupLabel(key)"
+          :name="key"
+        />
+      </el-tabs>
+    </div>
+
+    <div class="configs-grid">
+      <div 
+        v-for="item in visibleConfigs" 
+        :key="item._saveKey" 
+        class="config-card"
+      >
+        <div class="config-header">
+          <span class="config-label">
+            <span v-if="item.is_required" class="required-mark">*</span>
+            {{ item._keyLabel }}
+          </span>
+          <el-tooltip :content="item.desc" placement="top">
+            <el-icon class="help-icon"><QuestionFilled /></el-icon>
+          </el-tooltip>
+        </div>
+        <div class="config-current">
+          当前值: <code>{{ item.value }}</code>
+        </div>
+        
+        <div class="config-input">
+          <el-switch
+            v-if="isBoolean(item.value)"
+            :model-value="item._localValue === 'true'"
+            @update:model-value="onInput(item._saveKey, $event ? 'true' : 'false')"
+            active-text="是"
+            inactive-text="否"
+            class="bool-switch"
+          />
+          <el-input-number
+            v-else-if="isNumber(item.value)"
+            :model-value="parseNumber(item._localValue)"
+            @update:model-value="onInput(item._saveKey, $event?.toString())"
+            :min="0"
+            class="number-input"
+          />
+          <el-input
+            v-else
+            :model-value="item._localValue"
+            @update:model-value="onInput(item._saveKey, $event)"
+            class="text-input"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="actions-bar">
+      <el-button type="primary" @click="handleSave" :loading="saving" class="action-btn">
+        <el-icon><Check /></el-icon>
+        保存配置
+      </el-button>
+      <el-button @click="handleReset" class="action-btn">
+        <el-icon><RefreshLeft /></el-icon>
+        重置为默认值
+      </el-button>
+      <el-button @click="handleExport" class="action-btn">
+        <el-icon><Download /></el-icon>
+        导出配置
+      </el-button>
       <el-upload
         action=""
         :auto-upload="false"
         :on-change="handleImport"
         :limit="1"
         accept=".json"
+        class="import-upload"
       >
-        <el-button>
-          <el-icon><Upload /></el-icon> 导入配置
+        <el-button class="action-btn">
+          <el-icon><Upload /></el-icon>
+          导入配置
         </el-button>
       </el-upload>
     </div>
 
-    <div v-if="errorMsg" style="margin-top: 16px; color: #f56c6c;">
+    <div v-if="errorMsg" class="error-message">
       <el-alert :title="errorMsg" type="error" show-close />
     </div>
   </div>
@@ -88,7 +102,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { getConfigs, batchUpdateConfigs, resetConfigs, exportConfigs } from '../api/index.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { QuestionFilled, Upload } from '@element-plus/icons-vue'
+import { QuestionFilled, Upload, Setting, Check, RefreshLeft, Download } from '@element-plus/icons-vue'
 
 const allGroups = ['core', 'model_services', 'performance', 'retrieval', 'preprocessing']
 
@@ -303,3 +317,211 @@ async function handleImport(file) {
   }
 }
 </script>
+
+<style scoped>
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title-icon {
+  color: #f472b6;
+}
+
+.page-desc {
+  color: #64748b;
+  margin: 0;
+}
+
+.config-tabs {
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 16px;
+  padding: 20px 20px 0 20px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  margin-bottom: 24px;
+}
+
+.config-tabs-inner {
+  background: transparent !important;
+}
+
+.config-tabs-inner :deep(.el-tabs__header) {
+  margin: 0;
+}
+
+.config-tabs-inner :deep(.el-tabs__nav-wrap) {
+  background: transparent;
+}
+
+.config-tabs-inner :deep(.el-tabs__item) {
+  color: #64748b;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid transparent;
+  border-radius: 10px 10px 0 0;
+  margin-right: 4px;
+  padding: 12px 20px;
+}
+
+.config-tabs-inner :deep(.el-tabs__item:hover) {
+  color: #f8fafc;
+}
+
+.config-tabs-inner :deep(.el-tabs__item.is-active) {
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+.config-tabs-inner :deep(.el-tabs__content) {
+  display: none;
+}
+
+.configs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.config-card {
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 14px;
+  padding: 20px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  transition: all 0.3s;
+}
+
+.config-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.config-label {
+  color: #f8fafc;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.required-mark {
+  color: #f87171;
+  margin-right: 4px;
+}
+
+.help-icon {
+  color: #64748b;
+  cursor: help;
+  transition: color 0.2s;
+}
+
+.help-icon:hover {
+  color: #818cf8;
+}
+
+.config-current {
+  color: #64748b;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.config-current code {
+  background: rgba(15, 23, 42, 0.6);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #34d399;
+  font-family: monospace;
+}
+
+.config-input :deep(.el-switch) {
+  --el-switch-on-color: #6366f1;
+}
+
+.config-input :deep(.el-input__wrapper) {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  box-shadow: none;
+  border-radius: 10px;
+}
+
+.config-input :deep(.el-input__inner) {
+  color: #f8fafc;
+}
+
+.config-input :deep(.el-input-number) {
+  width: 100%;
+}
+
+.config-input :deep(.el-input-number .el-input__wrapper) {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.actions-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 12px 20px;
+  border-radius: 10px;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #6366f1, #818cf8) !important;
+  border: none !important;
+}
+
+.action-btn:not(.primary) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+}
+
+.action-btn:not(.primary):hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.import-upload {
+  display: inline-block;
+}
+
+.error-message {
+  margin-top: 20px;
+}
+
+@media (max-width: 1024px) {
+  .configs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .actions-bar {
+    flex-direction: column;
+  }
+
+  .actions-bar .el-button {
+    width: 100%;
+  }
+}
+</style>
