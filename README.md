@@ -1,8 +1,8 @@
 # 图忆仓（TuYiCang）
 
-[English](README_EN.md) | 简体中文
+[简体中文](README.md) | [English](README_EN.md)
 
-私有化本地相册知识库，支持文搜图 + 图搜图双核心功能
+私有化本地相册知识库，基于多模态AI+多模态统一空间embedding技术，实现文搜图 + 图搜图双核心功能
 <div align="center">
   <img src="images/1.png" alt="Project Screenshot" width="30%" height="170px">
   <img src="images/2.png" alt="Project Screenshot" width="30%" height="170px">
