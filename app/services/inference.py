@@ -88,6 +88,9 @@ class ModelInference:
                     },
                 )
                 text = response.choices[0].message.content.strip()
+                if text=="" and attempt < max_retries:
+                    time.sleep(retry_delay)
+                    continue
                 return self._parse_json_output(text)
             except Exception as e:
                 logger.warning("VLM inference attempt %d failed: %s", attempt + 1, e)
