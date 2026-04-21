@@ -168,7 +168,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { getPhotos, getCategories, updateTags, deletePhoto } from '../api/index.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, ZoomIn, FolderOpened, Delete } from '@element-plus/icons-vue'
@@ -186,16 +186,35 @@ const tagDialogVisible = ref(false)
 const selectedPhoto = ref(null)
 const tagInput = ref('')
 const editingImageId = ref('')
+const currentPhotoIndex = ref(0)
+
+function handleKeydown(e) {
+  if (!dialogVisible.value) return
+  if (e.key === 'ArrowLeft') {
+    prevPhoto()
+  } else if (e.key === 'ArrowRight') {
+    nextPhoto()
+  }
+}
+
+function prevPhoto() {
+  if (currentPhotoIndex.value > 0) {
+    currentPhotoIndex.value--
+    selectedPhoto.value = photos.value[currentPhotoIndex.value]
+  }
+}
+
+function nextPhoto() {
+  if (currentPhotoIndex.value < photos.value.length - 1) {
+    currentPhotoIndex.value++
+    selectedPhoto.value = photos.value[currentPhotoIndex.value]
+  }
+}
 
 function formatDate(dateStr) {
   if (!dateStr) return '-'
   return dateStr.substring(0, 10)
 }
-
-onMounted(() => {
-  loadCategories()
-  loadPhotos()
-})
 
 async function loadCategories() {
   try {
@@ -243,9 +262,21 @@ function handleCategoryClick(node) {
 }
 
 function showDetail(photo) {
+  const index = photos.value.findIndex(p => p.image_id === photo.image_id)
+  currentPhotoIndex.value = index >= 0 ? index : 0
   selectedPhoto.value = photo
   dialogVisible.value = true
 }
+
+onMounted(() => {
+  loadCategories()
+  loadPhotos()
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 
 function editTags() {
   editingImageId.value = selectedPhoto.value.image_id

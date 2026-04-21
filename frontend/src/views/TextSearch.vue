@@ -119,7 +119,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { searchByText } from '../api/index.js'
 import { ElMessage } from 'element-plus'
 import { Search, Loading } from '@element-plus/icons-vue'
@@ -133,6 +133,38 @@ const selectedPhoto = ref(null)
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+const currentPhotoIndex = ref(0)
+
+function handleKeydown(e) {
+  if (!dialogVisible.value) return
+  if (e.key === 'ArrowLeft') {
+    prevPhoto()
+  } else if (e.key === 'ArrowRight') {
+    nextPhoto()
+  }
+}
+
+function prevPhoto() {
+  if (currentPhotoIndex.value > 0) {
+    currentPhotoIndex.value--
+    selectedPhoto.value = results.value[currentPhotoIndex.value]
+  }
+}
+
+function nextPhoto() {
+  if (currentPhotoIndex.value < results.value.length - 1) {
+    currentPhotoIndex.value++
+    selectedPhoto.value = results.value[currentPhotoIndex.value]
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 
 const searchTips = [
   '海边日落',
@@ -187,6 +219,8 @@ async function handlePageChange(page) {
 }
 
 function showDetail(photo) {
+  const index = results.value.findIndex(p => p.image_id === photo.image_id)
+  currentPhotoIndex.value = index >= 0 ? index : 0
   selectedPhoto.value = photo
   dialogVisible.value = true
 }
