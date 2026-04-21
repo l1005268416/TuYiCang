@@ -237,7 +237,7 @@ function handlePageChange(page) {
 }
 
 function handleCategoryClick(node) {
-  folderTag.value = node.name
+  folderTag.value = node.path || node.name
   currentPage.value = 1
   loadPhotos()
 }

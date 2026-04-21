@@ -103,12 +103,14 @@ def categories():
                     current_level[part]['_count'] += 1
                     current_level = current_level[part]['_children']
 
-        def _build_tree(tree, parent_name=None):
+        def _build_tree(tree, parent_path=None):
             nodes = []
             for name, data in sorted(tree.items()):
-                child_nodes = _build_tree(data['_children'], name)
+                path = f"{parent_path}/{name}" if parent_path else name
+                child_nodes = _build_tree(data['_children'], path)
                 nodes.append({
                     'name': name,
+                    'path': path,
                     'count': data['_count'],
                     'children': child_nodes if child_nodes else []
                 })
@@ -146,7 +148,7 @@ def list_photos():
         if tag:
             conditions['tag'] = tag
         if folder_tag:
-            conditions['folder_tag'] = folder_tag
+            conditions['folder_tag_prefix'] = folder_tag
         if start_time:
             conditions['start_time'] = start_time
         if end_time:

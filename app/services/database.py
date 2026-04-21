@@ -127,6 +127,10 @@ def query_metadata(conn, conditions=None, page=1, page_size=20):
             where_clauses.append("folder_tag = ?")
             params.append(conditions['folder_tag'])
 
+        if conditions.get('folder_tag_prefix'):
+            where_clauses.append("folder_tag LIKE ?")
+            params.append(conditions['folder_tag_prefix'] + '%')
+
         if conditions.get('start_time'):
             where_clauses.append("create_time >= ?")
             params.append(conditions['start_time'])
