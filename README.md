@@ -28,7 +28,7 @@
 
 - **编程语言**：Python 3.9.10
 - **多模态模型（VLM）**：qwen3.5-0.8b（Ollama部署）
-- **文本嵌入模型**：qwen3-embedding:0.6b（Ollama部署）
+- **文本嵌入模型**：~~qwen3-embedding:0.6b（Ollama部署）~~(已弃用，文本嵌入模型和视觉嵌入模型用同一个Qwen3-VL-Embedding-2B)
 - **视觉嵌入模型**：Qwen3-VL-Embedding-2B（vLLM部署）
 - **向量数据库**：milvus:v2.4.8
 - **元数据数据库**：SQLite 3.41.2
@@ -104,7 +104,6 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 # 拉取模型
 ollama pull qwen3.5-0.8b
-ollama pull qwen3-embedding:0.6b
 
 # 启动 Ollama 服务(通常状况系统会自启)
 ollama serve

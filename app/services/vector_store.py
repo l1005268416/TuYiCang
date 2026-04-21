@@ -54,13 +54,13 @@ class VectorStore:
             return {"status": "success", "index_names": ["text_fallback", "vision_fallback"]}
 
         try:
-            if not utility.has_collection("text_index"):
+            if not utility.has_collection("text3_index"):
                 text_fields = [
                     FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=36, is_primary=True),
-                    FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=1024),
+                    FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=2048),
                 ]
                 text_schema = CollectionSchema(fields=text_fields, description="Text semantic index")
-                self._text_collection = Collection(name="text_index", schema=text_schema)
+                self._text_collection = Collection(name="text3_index", schema=text_schema)
 
                 index_params = {
                     "metric_type": "COSINE",
@@ -70,7 +70,7 @@ class VectorStore:
                 self._text_collection.create_index(field_name="vector", index_params=index_params)
                 self._text_collection.load()
             else:
-                self._text_collection = Collection("text_index")
+                self._text_collection = Collection("text3_index")
                 self._text_collection.load()
 
             if not utility.has_collection("vision_index"):

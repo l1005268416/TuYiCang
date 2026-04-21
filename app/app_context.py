@@ -89,13 +89,27 @@ class ApplicationServices:
         valid_extensions = self.config.get_value('preprocessing.valid_extensions')
         to_ingest = []
 
-        cursor = self.db.execute("SELECT image_id, original_path, md5 FROM photo_metadata")
+        cursor = self.db.execute("SELECT image_id, original_path, md5,description,processed_path,tags FROM photo_metadata")
         all_records = cursor.fetchall()
         path_to_md5 = {}
         for row in all_records:
             original_path = row[1]
             path_to_md5[original_path] = {'image_id': row[0], 'md5': row[2]}
-
+######################
+            # description=row[3]
+            # tags=row[5].split(',')
+            
+            # if description.startswith('图片: '):
+            #     description, tags = self.inference.vlm_inference(row[4])
+            #     if not description:
+            #         description = f"图片: {os.path.basename(original_path)}"
+            #         tags = [os.path.basename(original_path).rsplit('.', 1)[0]]
+            #     self.db.execute("UPDATE photo_metadata SET tags = ?, description = ? WHERE image_id = ?", (",".join(tags), description, row[0]))
+            #     self.db.commit()
+            # text_vector = self.inference.text_embedding_inference(description + ", " + ",".join(tags))
+            # self.vector_store.insert_vectors(row[0], text_vector,None)
+####################
+################
         logger.info("Loaded %d md5 records into memory", len(path_to_md5))
 
         file_list = []
@@ -152,6 +166,12 @@ class ApplicationServices:
                 result = future.result()
                 if result[1] == 'new' or result[1] == 'changed':
                     to_ingest.append((result[0], result[2]))
+                    ##################################
+                    ######################
+                # else:
+                #     logger.info("Startup sync: unchanged %s", result[0])
+                    #################################
+                    ####################################
 
         logger.info("Startup sync: found %d files to process", len(to_ingest))
 
