@@ -1,0 +1,4 @@
+vector_store:
+  host: "192.168.31.159"
+  port: 19530
+  timeout: 10

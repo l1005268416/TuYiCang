@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+import yaml
 
 logger = logging.getLogger(__name__)
 try:
@@ -39,12 +40,21 @@ class VectorStore:
             logger.info("Using fallback in-memory vector store")
             return {"status": "success", "index_names": ["text_fallback", "vision_fallback"]}
 
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.yaml')
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+
+        vs_config = config.get('vector_store', {})
+        host = vs_config.get('host', 'localhost')
+        port = vs_config.get('port', 19530)
+        timeout = vs_config.get('timeout', 10)
+
         try:
             connections.connect(
                 alias="default",
-                host="192.168.1.149",
-                port=19530,
-                timeout=10
+                host=host,
+                port=port,
+                timeout=timeout
             )
         except Exception:
             logger.warning("Milvus server not available, using fallback store")
