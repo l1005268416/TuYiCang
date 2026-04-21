@@ -92,6 +92,7 @@ def search_by_text():
                 record['score'] = scores_map.get(img_id, 0)
                 record['thumb_url'] = _path_to_url(record.get('thumb_path', ''))
                 record['processed_url'] = _path_to_url(record.get('processed_path', ''))
+                record['original_url'] = _path_to_url(record.get('original_path', ''))
                 all_results.append(record)
 
         total = len(search_result['image_ids'])
@@ -177,6 +178,7 @@ def search_by_image():
                     record['score'] = scores_map.get(img_id, 0)
                     record['thumb_url'] = _path_to_url(record.get('thumb_path', ''))
                     record['processed_url'] = _path_to_url(record.get('processed_path', ''))
+                    record['original_url'] = _path_to_url(record.get('original_path', ''))
                     result_data.append(record)
 
             return jsonify(

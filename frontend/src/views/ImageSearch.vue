@@ -202,7 +202,7 @@ function getThumbUrl(photo) {
 
 function getOriginalUrl(photo) {
   if (!photo) return ''
-  return photo.processed_url || photo.original_path || ''
+  return photo.original_url || photo.processed_url || ''
 }
 </script>
 

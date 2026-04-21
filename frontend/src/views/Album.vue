@@ -97,10 +97,10 @@
       <div v-if="selectedPhoto">
         <div class="detail-image-wrapper">
           <el-image
-            :src="selectedPhoto.processed_url || getOriginalUrl(selectedPhoto.original_path)"
+            :src="getOriginalUrl(selectedPhoto.original_url)||selectedPhoto.processed_url "
             style="width: 100%; max-height: 70vh; border-radius: 12px;"
             fit="contain"
-            :preview-src-list="[selectedPhoto.processed_url || getOriginalUrl(selectedPhoto.original_path)]"
+            :preview-src-list="[getOriginalUrl(selectedPhoto.original_url)||selectedPhoto.processed_url ]"
           />
         </div>
         <div class="detail-meta">

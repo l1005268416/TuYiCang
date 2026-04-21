@@ -165,6 +165,7 @@ def list_photos():
         for record in records:
             record['thumb_url'] = _path_to_url(record.get('thumb_path', ''))
             record['processed_url'] = _path_to_url(record.get('processed_path', ''))
+            record['original_url'] = _path_to_url(record.get('original_path', ''))
         return jsonify(
             success=True,
             code=200,
