@@ -167,7 +167,8 @@ class ConfigManager:
         result = {}
         for g, kvs in self._cache.items():
             for k, v in kvs.items():
-                full_key = f"{g}.{k}" if g == 'model_services' else k
+                # full_key = f"{g}.{k}" if g == 'model_services' else k
+                full_key =  k
                 result[full_key] = {**v, '_group': g, '_config_key': k}
         return result
 

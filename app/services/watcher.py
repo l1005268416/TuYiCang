@@ -26,12 +26,12 @@ class DirectoryEventHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         if not event.is_directory and self._is_image(event.src_path):
-            time.sleep(1)
+            # time.sleep(1)
             self.event_queue.put(('created', event.src_path))
 
     def on_modified(self, event):
         if not event.is_directory and self._is_image(event.src_path):
-            time.sleep(1)
+            # time.sleep(1)
             self.event_queue.put(('modified', event.src_path))
 
     def on_deleted(self, event):
@@ -45,7 +45,7 @@ class WatcherService:
         self.handler_fn = handler_fn
         self._observer = None
         self._worker_thread = None
-        self._event_queue = Queue()
+        self._event_queue = Queue(100)
         self._running = False
         self._executor = None
 
