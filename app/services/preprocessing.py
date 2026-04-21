@@ -110,9 +110,9 @@ class PreprocessingService:
             logger.error("Failed to compute MD5 for %s", original_path)
             return {"status": "failed", "error": "MD5 computation failed"}
 
-        existing_id = self._find_by_md5(md5)
-        if existing_id:
-            return {"status": "skipped", "reason": "md5_duplicate", "image_id": existing_id}
+        existing_photo = self._find_by_md5(md5)
+        if existing_photo:
+            return {"status": "skipped", "reason": "md5_duplicate", "image_id": existing_photo['image_id'], "original_path": existing_photo['original_path']}
 
         exif_data = self.parse_exif_for_file(original_path)
 
@@ -199,10 +199,10 @@ class PreprocessingService:
     def _find_by_md5(self, md5_hash):
         try:
             cursor = self.db.execute(
-                "SELECT image_id FROM photo_metadata WHERE md5 = ?", (md5_hash,)
+                "SELECT image_id,original_path FROM photo_metadata WHERE md5 = ?", (md5_hash,)
             )
             row = cursor.fetchone()
-            return row[0] if row else None
+            return {'image_id': row[0], 'original_path': row[1]} if row else None
         except Exception as e:
             logger.error("MD5 lookup failed: %s", e)
             return None

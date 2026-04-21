@@ -4,6 +4,7 @@ from app.services.inference import ModelInference
 from app.services.vector_store import VectorStore
 from app.services.preprocessing import PreprocessingService
 from app.services.watcher import WatcherService
+from threading import Thread
 
 
 _application_services = None
@@ -69,7 +70,7 @@ class ApplicationServices:
 
         auto_path = self.config.get_value('core.photo_root_path')
         if auto_path:
-            self._sync_on_startup(auto_path)
+            Thread(target=self._sync_on_startup, args=(auto_path,)).start()
 
             self.watcher = WatcherService(self.config, handle_watcher_event)
             self.watcher.start(auto_path)
@@ -184,7 +185,14 @@ class ApplicationServices:
             result = self.preprocessing.ingest_image(file_path)
             if result['status'] == 'success':
                 logger.info("Startup synced: %s -> %s", file_path, result.get('image_id'))
+            elif result['status'] == 'skipped':
+                #把file_path和original_path记录到一个文件中
+                # with open('skipped.txt', 'a') as f:
+                #     f.write(f"{file_path} , {result.get('original_path')}\n")
+                #删除file_path对应的文件
+                logger.info("Startup sync skipped: %s -> %s", file_path, result.get('original_path'))
             else:
+                # os.remove(file_path)
                 logger.warning("Startup sync failed for %s: %s", file_path, result.get('error'))
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
