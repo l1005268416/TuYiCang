@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.app/debug.db
+data/
+cache/
+vector_db/
+logs/
+*.log
+.env
