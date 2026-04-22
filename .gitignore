@@ -40,3 +40,5 @@ logs/
 !.gitignore
 doc/TuYiCangSRS.md
 doc/TuYiCangSDDD.md
+m.py
+.env

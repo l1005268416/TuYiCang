@@ -40,21 +40,20 @@ class VectorStore:
             logger.info("Using fallback in-memory vector store")
             return {"status": "success", "index_names": ["text_fallback", "vision_fallback"]}
 
-        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.yaml')
-        with open(config_path, 'r') as f:
-            config = yaml.safe_load(f)
-
-        vs_config = config.get('vector_store', {})
-        host = vs_config.get('host', 'localhost')
-        port = vs_config.get('port', 19530)
-        timeout = vs_config.get('timeout', 10)
+        host = os.environ.get('MILVUS_HOST', 'localhost')
+        port = int(os.environ.get('MILVUS_PORT', '19530'))
+        timeout = int(os.environ.get('MILVUS_TIMEOUT', '10'))
+        user = os.environ.get('MILVUS_USER', 'root')
+        password = os.environ.get('MILVUS_PASSWORD', '')
 
         try:
             connections.connect(
                 alias="default",
                 host=host,
                 port=port,
-                timeout=timeout
+                timeout=timeout,
+                user=user,
+                password=password
             )
         except Exception:
             logger.warning("Milvus server not available, using fallback store")
