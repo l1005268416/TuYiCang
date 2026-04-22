@@ -89,7 +89,24 @@ class ApplicationServices:
 
         valid_extensions = self.config.get_value('preprocessing.valid_extensions')
         to_ingest = []
+        def process_ingest(file_path, existing_id):
+            if existing_id:
+                self.vector_store.delete_vectors(existing_id)
+                from app.services.database import delete_metadata
+                delete_metadata(self.db, existing_id)
 
+            result = self.preprocessing.ingest_image(file_path)
+            if result['status'] == 'success':
+                logger.info("Startup synced: %s -> %s", file_path, result.get('image_id'))
+            elif result['status'] == 'skipped':
+                #把file_path和original_path记录到一个文件中
+                # with open('skipped.txt', 'a') as f:
+                #     f.write(f"{file_path} , {result.get('original_path')}\n")
+                #删除file_path对应的文件
+                logger.info("Startup sync skipped: %s -> %s", file_path, result.get('original_path'))
+            else:
+                # os.remove(file_path)
+                logger.warning("Startup sync failed for %s: %s", file_path, result.get('error'))
         cursor = self.db.execute("SELECT image_id, original_path, md5,description,processed_path,tags FROM photo_metadata")
         all_records = cursor.fetchall()
         path_to_md5 = {}
@@ -97,18 +114,19 @@ class ApplicationServices:
             original_path = row[1]
             path_to_md5[original_path] = {'image_id': row[0], 'md5': row[2]}
 ######################
-            # description=row[3]
-            # tags=row[5].split(',')
+            description=row[3]
+            tags=row[5].split(',')
             
-            # if description.startswith('图片: '):
-            #     description, tags = self.inference.vlm_inference(row[4])
-            #     if not description:
-            #         description = f"图片: {os.path.basename(original_path)}"
-            #         tags = [os.path.basename(original_path).rsplit('.', 1)[0]]
-            #     self.db.execute("UPDATE photo_metadata SET tags = ?, description = ? WHERE image_id = ?", (",".join(tags), description, row[0]))
-            #     self.db.commit()
-            # text_vector = self.inference.text_embedding_inference(description + ", " + ",".join(tags))
-            # self.vector_store.insert_vectors(row[0], text_vector,None)
+            if description.startswith('图片: '):
+                # description, tags = self.inference.vlm_inference(row[4])
+                process_ingest(original_path,row[0])
+                # if not description:
+                #     description = f"图片: {os.path.basename(original_path)}"
+                #     tags = [os.path.basename(original_path).rsplit('.', 1)[0]]
+                # self.db.execute("UPDATE photo_metadata SET tags = ?, description = ? WHERE image_id = ?", (",".join(tags), description, row[0]))
+                # self.db.commit()
+                # text_vector = self.inference.text_embedding_inference(description + ", " + ",".join(tags))
+                # self.vector_store.insert_vectors(row[0], text_vector,None)
 ####################
 ################
         logger.info("Loaded %d md5 records into memory", len(path_to_md5))
@@ -176,24 +194,7 @@ class ApplicationServices:
 
         logger.info("Startup sync: found %d files to process", len(to_ingest))
 
-        def process_ingest(file_path, existing_id):
-            if existing_id:
-                self.vector_store.delete_vectors(existing_id)
-                from app.services.database import delete_metadata
-                delete_metadata(self.db, existing_id)
-
-            result = self.preprocessing.ingest_image(file_path)
-            if result['status'] == 'success':
-                logger.info("Startup synced: %s -> %s", file_path, result.get('image_id'))
-            elif result['status'] == 'skipped':
-                #把file_path和original_path记录到一个文件中
-                # with open('skipped.txt', 'a') as f:
-                #     f.write(f"{file_path} , {result.get('original_path')}\n")
-                #删除file_path对应的文件
-                logger.info("Startup sync skipped: %s -> %s", file_path, result.get('original_path'))
-            else:
-                # os.remove(file_path)
-                logger.warning("Startup sync failed for %s: %s", file_path, result.get('error'))
+        
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [executor.submit(process_ingest, fp, eid) for fp, eid in to_ingest]

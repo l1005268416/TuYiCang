@@ -94,7 +94,11 @@ class ModelInference:
                 if text=="" and attempt < max_retries:
                     time.sleep(retry_delay)
                     continue
-                return self._parse_json_output(text)
+                description, tags = self._parse_json_output(text)
+                if description=="" and attempt < max_retries:
+                    time.sleep(retry_delay)
+                    continue
+                return description, tags
             except Exception as e:
                 logger.warning("VLM inference attempt %d failed: %s", attempt + 1, e)
                 if attempt < max_retries:
